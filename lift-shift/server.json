@@ -1,0 +1,8 @@
+{
+    "name":"Workshop",
+    "web":{
+        "rewrites":{
+            "enable":"true"
+        }
+    }
+}

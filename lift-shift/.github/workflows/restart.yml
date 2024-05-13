@@ -1,0 +1,46 @@
+name: Restart Service
+
+# This workflow can only be triggered manually
+on:
+  workflow_dispatch:
+    branches:
+        - develop
+        - main
+
+env:
+  PRODUCTION_SERVERS: ${{ vars.PRODUCTION_SERVER_LIST }}
+  STAGING_SERVERS: ${{ vars.STAGING_SERVER_LIST }}
+  SERVICE_NAME: BOX_1
+  SITE_URL: https://localhost:7001
+  WAIT_TIME: 45
+
+jobs:
+  deploy:
+    name: Restart CommandBox Services
+    # needs: tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup Environment Variables For Deploy Process
+        id: current_version
+        run: |
+          # main
+          echo "SERVER_LIST=${{ env.PRODUCTION_SERVERS }}" >> $GITHUB_ENV
+          if [ $GITHUB_REF == 'refs/heads/develop' ]
+          then
+            echo "SERVER_LIST=${{ env.STAGING_SERVERS }}" >> $GITHUB_ENV
+          fi
+
+      - name: Restart CommandBox Services
+        id: deploy_app
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          touch ~/.ssh/known_hosts
+          for server in ${{ env.SERVER_LIST }}
+          do
+            echo Deploying to $server...
+            ssh -p 17022 -o 'StrictHostKeyChecking no' github@$server
+            echo 'powershell -command "stop-service -name ${{ env.SERVICE_NAME }}" && powershell -command "start-service -name ${{ env.SERVICE_NAME }}" && ping -n ${{ env.WAIT_TIME }} 127.0.0.1 > nul && curl --insecure ${{ env.SITE_URL }}' | ssh -p 17022 github@$server
+            echo Server service for $server successfully restarted!
+          done

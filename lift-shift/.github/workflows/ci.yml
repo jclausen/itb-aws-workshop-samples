@@ -1,0 +1,57 @@
+name: CI/CD
+
+# Only run on these branches
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+env:
+  PRODUCTION_SERVERS: ${{ vars.PRODUCTION_SERVER_LIST }}
+  STAGING_SERVERS: ${{ vars.STAGING_SERVER_LIST }}
+  SERVICE_NAME: BOX_1
+  SITE_DIRECTORY: site1
+  SITE_URL: https://localhost:7001
+
+jobs:
+  #############################################
+  # Tests First baby! We fail, no build :(
+  #############################################
+  # tests:
+  #   uses: ./.github/workflows/tests.yml
+  #   secrets: inherit
+
+  deploy:
+    name: Deploy Application
+    # needs: tests
+    runs-on: ubuntu-20.04
+    # permissions:
+    #   contents: read
+    #   packages: write
+    #   deployments: write
+    steps:
+      - name: Setup Environment Variables For Build Process
+        id: current_version
+        run: |
+          # main
+          echo "SERVER_LIST=${{ env.PRODUCTION_SERVERS }}" >> $GITHUB_ENV
+          if [ $GITHUB_REF == 'refs/heads/develop' ]
+          then
+            echo "SERVER_LIST=${{ env.STAGING_SERVERS }}" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy Application
+        id: deploy_app
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          touch ~/.ssh/known_hosts
+          for server in ${{ env.SERVER_LIST }}
+          do
+            echo Deploying to $server...
+            ssh -p 17022 -o 'StrictHostKeyChecking no' github@$server
+            echo 'cd /d e:\websites\${{ env.SITE_DIRECTORY }} && git fetch --all && git reset --hard origin/${{ github.head_ref || github.ref_name }} && curl --insecure ${{ env.SITE_URL }}' | ssh -p 17022 github@$server
+            echo Server $server successfully deployed! ':)'
+          done
