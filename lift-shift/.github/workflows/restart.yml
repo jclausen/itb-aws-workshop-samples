@@ -11,7 +11,7 @@ env:
   PRODUCTION_SERVERS: ${{ vars.PRODUCTION_SERVER_LIST }}
   STAGING_SERVERS: ${{ vars.STAGING_SERVER_LIST }}
   SERVICE_NAME: BOX_1
-  SITE_URL: https://localhost:7001
+  SITE_URL: http://localhost
   WAIT_TIME: 45
 
 jobs:

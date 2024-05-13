@@ -12,7 +12,7 @@ env:
   STAGING_SERVERS: ${{ vars.STAGING_SERVER_LIST }}
   SERVICE_NAME: BOX_1
   SITE_DIRECTORY: site1
-  SITE_URL: https://localhost:7001
+  SITE_URL: http://localhost
 
 jobs:
   #############################################
